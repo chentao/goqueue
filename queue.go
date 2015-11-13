@@ -7,12 +7,15 @@ The queue implemented here is as fast as it is for an additional reason: it is *
 */
 package queue
 
+import "sync"
+
 const minQueueLen = 16
 
 // Queue represents a single instance of the queue data structure.
 type Queue struct {
 	buf               []interface{}
 	head, tail, count int
+	m                 sync.Mutex
 }
 
 // New constructs and returns a new Queue.
@@ -46,6 +49,9 @@ func (q *Queue) resize() {
 
 // Add puts an element on the end of the queue.
 func (q *Queue) Add(elem interface{}) {
+	q.m.Lock()
+	defer q.m.Unlock()
+
 	if q.count == len(q.buf) {
 		q.resize()
 	}
@@ -58,6 +64,9 @@ func (q *Queue) Add(elem interface{}) {
 // Peek returns the element at the head of the queue. This call panics
 // if the queue is empty.
 func (q *Queue) Peek() interface{} {
+	q.m.Lock()
+	defer q.m.Unlock()
+
 	if q.count <= 0 {
 		panic("queue: Peek() called on empty queue")
 	}
@@ -67,6 +76,9 @@ func (q *Queue) Peek() interface{} {
 // Get returns the element at index i in the queue. If the index is
 // invalid, the call will panic.
 func (q *Queue) Get(i int) interface{} {
+	q.m.Lock()
+	defer q.m.Unlock()
+
 	if i < 0 || i >= q.count {
 		panic("queue: Get() called with index out of range")
 	}
@@ -76,6 +88,9 @@ func (q *Queue) Get(i int) interface{} {
 // Remove removes the element from the front of the queue. If you actually
 // want the element, call Peek first. This call panics if the queue is empty.
 func (q *Queue) Remove() {
+	q.m.Lock()
+	defer q.m.Unlock()
+
 	if q.count <= 0 {
 		panic("queue: Remove() called on empty queue")
 	}
