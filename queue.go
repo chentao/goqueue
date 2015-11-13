@@ -16,12 +16,14 @@ type Queue struct {
 	buf               []interface{}
 	head, tail, count int
 	m                 sync.Mutex
+	c                 chan int
 }
 
 // New constructs and returns a new Queue.
 func New() *Queue {
 	return &Queue{
 		buf: make([]interface{}, minQueueLen),
+		c:   make(chan int),
 	}
 }
 
@@ -59,6 +61,9 @@ func (q *Queue) Add(elem interface{}) {
 	q.buf[q.tail] = elem
 	q.tail = (q.tail + 1) % len(q.buf)
 	q.count++
+	go func() {
+		q.c <- 1
+	}()
 }
 
 // Peek returns the element at the head of the queue. This call panics
@@ -100,4 +105,8 @@ func (q *Queue) Remove() {
 	if len(q.buf) > minQueueLen && q.count*4 == len(q.buf) {
 		q.resize()
 	}
+}
+
+func (q *Queue) Wait() {
+	<-q.c
 }
