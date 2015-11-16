@@ -3,7 +3,6 @@ Package queue provides a fast, ring-buffer queue based on the version suggested 
 Using this instead of other, simpler, queue implementations (slice+append or linked list) provides
 substantial memory and time benefits, and fewer GC pauses.
 
-The queue implemented here is as fast as it is for an additional reason: it is *not* thread-safe.
 */
 package queue
 
@@ -18,13 +17,15 @@ type Queue struct {
 	head, tail, count int
 	m                 sync.Mutex
 	c                 chan int
+	max_len           int
 }
 
 // New constructs and returns a new Queue.
 func New() *Queue {
 	return &Queue{
-		buf: make([]interface{}, minQueueLen),
-		c:   make(chan int),
+		buf:     make([]interface{}, minQueueLen),
+		c:       make(chan int),
+		max_len: 10000,
 	}
 }
 
@@ -55,6 +56,9 @@ func (q *Queue) Add(elem interface{}) {
 	q.m.Lock()
 	defer q.m.Unlock()
 
+	if q.count >= q.max_len {
+		return
+	}
 	if q.count == len(q.buf) {
 		q.resize()
 	}
