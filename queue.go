@@ -21,11 +21,11 @@ type Queue struct {
 }
 
 // New constructs and returns a new Queue.
-func New() *Queue {
+func New(max_len int) *Queue {
 	return &Queue{
 		buf:     make([]interface{}, minQueueLen),
 		c:       make(chan int),
-		max_len: 10000,
+		max_len: max_len,
 	}
 }
 
