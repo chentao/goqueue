@@ -8,6 +8,7 @@ The queue implemented here is as fast as it is for an additional reason: it is *
 package queue
 
 import "sync"
+import "fmt"
 
 const minQueueLen = 16
 
@@ -124,6 +125,15 @@ func (q *Queue) PeekAndRemove() interface{} {
 	return h
 }
 
-func (q *Queue) Wait() {
-	<-q.c
+func (q *Queue) Wait() error {
+	x, ok := <-q.c
+	if ok && x == 1 {
+		return nil
+	}
+	return fmt.Errorf("Queue Stopped")
+}
+
+func (q *Queue) Stop() {
+	q.c <- 0
+	close(q.c)
 }
