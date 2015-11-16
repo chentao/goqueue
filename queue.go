@@ -107,6 +107,23 @@ func (q *Queue) Remove() {
 	}
 }
 
+func (q *Queue) PeekAndRemove() interface{} {
+	q.m.Lock()
+	defer q.m.Unlock()
+
+	if q.count <= 0 {
+		panic("queue: Remove() called on empty queue")
+	}
+	h := q.buf[q.head]
+	q.buf[q.head] = nil
+	q.head = (q.head + 1) % len(q.buf)
+	q.count--
+	if len(q.buf) > minQueueLen && q.count*4 == len(q.buf) {
+		q.resize()
+	}
+	return h
+}
+
 func (q *Queue) Wait() {
 	<-q.c
 }
