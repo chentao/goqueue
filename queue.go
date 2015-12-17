@@ -8,6 +8,7 @@ package queue
 
 import "sync"
 import "fmt"
+import "time"
 
 const minQueueLen = 16
 
@@ -16,16 +17,16 @@ type Queue struct {
 	buf               []interface{}
 	head, tail, count int
 	m                 sync.Mutex
-	c                 chan int
 	max_len           int
+	stopped           bool
 }
 
 // New constructs and returns a new Queue.
 func New(max_len int) *Queue {
 	return &Queue{
 		buf:     make([]interface{}, minQueueLen),
-		c:       make(chan int),
 		max_len: max_len,
+		stopped: false,
 	}
 }
 
@@ -66,9 +67,6 @@ func (q *Queue) Add(elem interface{}) {
 	q.buf[q.tail] = elem
 	q.tail = (q.tail + 1) % len(q.buf)
 	q.count++
-	go func() {
-		q.c <- 1
-	}()
 }
 
 // Peek returns the element at the head of the queue. This call panics
@@ -130,14 +128,17 @@ func (q *Queue) PeekAndRemove() interface{} {
 }
 
 func (q *Queue) Wait() error {
-	x, ok := <-q.c
-	if ok && x == 1 {
-		return nil
+	for {
+		if q.stopped == true {
+			return fmt.Errorf("Queue Stopped!")
+		}
+		if q.count > 0 {
+			return nil
+		}
+		time.Sleep(500 * time.Millisecond)
 	}
-	return fmt.Errorf("Queue Stopped")
 }
 
 func (q *Queue) Stop() {
-	q.c <- 0
-	close(q.c)
+	q.stopped = true
 }
